@@ -1,0 +1,61 @@
+---
+title: "Simple Regression Model"
+author: "Timothy Chen Allen"
+date: "Wednesday, June 24, 2015"
+output: html_document
+---
+
+# Simple Data Model
+This is a "pretend" data model based on a known relationship: F to C
+We'll randomize this relationship a little and show how we model it.  
+
+## Purpose of Modeling
+Remember: the purposes of modeling are:
+Based on historical data...
+1) understand relationships between variables
+2) allow prediction 
+
+## Our Fake Data
+1) Create a model using a known formula (Fahrenheit to Celsius),
+but include a random effect (maybe we're looking at two different
+thermometers a block apart).
+```{r fake.data}
+N <- 4000
+f <- rnorm(n=N, mean=45, sd=20)
+c <- (f-32)*(5/9) + rnorm(n=N, mean=0, sd=10)
+```
+
+## Let's see some of the data
+```{r inspect.data}
+head(data.frame(f,c),10)
+```
+
+## Create a model predicting Celsius given Fahrenheit
+We expect the model to look a lot like the original
+formula.  Draw a line with the model's prediction values.
+```{r create.model}
+plot(x=f, y=c, main=paste("Simple Linear Regression:", N), pch=21,
+     bg=heat.colors(139)[round(f-min(f))+1])
+# This creates the model (parentheses around the command displays the output)
+(m <- lm(c ~ f))
+abline(m, col="purple", lty="dashed", lwd=3)
+
+# Draw another line with the predicted values of the perfect formula
+perfect.f <- 0:80
+perfect.c <- (perfect.f-32)*(5/9)
+abline(lm(perfect.c ~ perfect.f), col="green", lty="dashed", lwd=3)
+```
+
+## Diagnose the model with `summary` and `plot`
+```{r diagnose}
+summary(m)
+par(mfrow=c(2,2))
+plot(m, col="blue")
+```
+
+## Use the model to predict
+We expect 95F to predict about 35C; the model predicts 34.6, so pretty good.
+```{r predict}
+test.case <- data.frame(f=95) 
+predict(m, newdata=test.case)
+```

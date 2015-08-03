@@ -1,0 +1,148 @@
+---
+title: 'Linear Regression Model: mtcars'
+author: "Timothy Chen Allen"
+date: "Tuesday, June 23, 2015"
+output: html_document
+---
+
+# Multiple Regression using the `mtcars` built-in dataset
+Multiple Regression extends the regression model beyond one explanatory
+variable.  The purposes are still to understand relationships between
+variables and make predictions.  Simple regression almost never is enough
+to understand our data; mathematically, adding more explanatory variables
+will make the model fit the data better.  BUT...
+
+# Watch out for Overmodeling!
+We can add more and more explanatory variables, and the model will fit the
+training data better... but it may not work for other cases!  So we try to
+only add variables that make sense (moon phase probably doesn't affect
+wildfire occurences!) and add the least we can while still getting a good fit.
+
+## Our Dataset: `mtcars`
+`mtcars` is one of the built-in datasets in the `datasets` package of `R`.
+`mtcars` data was extracted from the 1974 Motor Trend US magazine, and comprises
+fuel consumption and 10 aspects of automobile design and performance for
+32 automobiles (1973–74 models).
+
+element | Description      
+------- | -----------------
+mpg     | Miles/(US) gallon
+cyl     | Number of cylinders
+disp    | Displacement (cu.in.)
+hp      | Gross horsepower
+drat    | Rear axle ratio
+wt      | Weight (lb/1000)
+qsec    | 1/4 mile time
+vs      | V/Straight Engine (0 = V, 1 = straight)
+am      | Transmission (0 = automatic, 1 = manual)
+gear    | Number of forward gears
+carb    | Number of carburetors
+
+## Objective
+Create a model of `mpg` taking into account other independent variables.
+
+## Picking the variables
+A big part of this is going to be selecting the right explanatory
+variables.  This ends up being something of an art, but R facilitates it.
+
+1) Consider that some variables in the dataset are actually dependent
+variables `(mpg, hp, qsec)`, so I do not consider them.
+```{r all.variable}
+mt <- mtcars[c("mpg","cyl","disp","drat","wt","vs","am","gear","carb")]
+# I like seeing this in mpg order to help me start understanding
+(mt <- mt[order(mt$mpg,decreasing=TRUE),])
+```
+
+2) Some variables are probably highly **correlated** (e.g. `cyl` and `disp`);
+we can test this using `pairs`.  Let's turn off the upper triangle,
+as it's redundant.
+```{r pairs}
+pairs(x = mt, upper.panel=NULL, col="blue")
+```
+
+3) It appears that `cyl` and `disp`, and `disp` and `wt`, may be correlated.
+Let's check it with the `cor` function
+```{r cors}
+cor(mt$cyl, mt$disp) # 0.902 - Just use one-- I like cyl
+cor(mt$disp, mt$wt)  # 0.888 - Just use one-- I like wt
+cor(mt$cyl, mt$wt)   # 0.782 - Use both
+```
+
+## Create an initial model
+Let's create the model with the remaining variables, and evaluate the
+model's *p*-value, Multiple R-squared, and coefficients' *p*-values.
+```{r m.mpg}
+m.mpg <- lm(mpg ~ cyl + drat + wt + vs + am + gear + carb, data=mtcars)
+summary(m.mpg)
+```
+a) The *p*-value (1.489e-08) indicates the model fits the data well: good
+b) The Multiple R-squared (0.853) the model explains 85.3% of the variance
+in the response variable (`mpg`) based on variance in the explanatory 
+variables `(cyl, drat, wt, etc)`: good
+c) coefficients' *p*-values indicate they are not significant.  Not good
+
+## Use `step` to trim down the model
+Let's use `step` to strip out less useful variables.  `step` is pretty
+dumb; it just tries every possible model and chooses the one with the
+lowest AIC (*Akaike Information Criteria*).  Don't just let `step` create
+your model for you; you need to understand possible relationships or the
+model becomes meaningless. `step` also produces a lot of output
+if you don't specify `trace=0`.
+```{r}
+m.mpg.step <- step(object = m.mpg, direction = "both", trace=0)
+summary(m.mpg.step)
+```
+
+although `carb` appears, its coefficient is not significant.
+build a model without it:
+```{r mpg2}
+m.mpg2 <- lm(mpg ~ cyl + wt, data=mtcars)
+summary(m.mpg2)
+```
+
+## Tweak the model: interaction effects
+I want to try out a single interaction effect; this means that I 
+believe there is a possibility that the combination of less cylinders
+and a manual transmission may improve mileage more than those
+factors by themselves.
+
+This points out an unfortunate fact: it is easier to build a model
+if you have some understanding of the subject matter.
+```{r m.mpg3}
+m.mpg3 <- lm(mpg ~ cyl * am + wt, data=mtcars)
+summary(m.mpg3)
+par(mfrow=c(2,2))
+plot(m.mpg3, col="blue")
+```
+
+## Compare models with the AIC
+The **Akaike Information Criteria** is a way of comparing models.
+It rewards better fit, but penalizes additional explanatory
+variables (thus avoiding *overmodeling*):
+```{r AIC}
+AIC(m.mpg)
+AIC(m.mpg.step)
+AIC(m.mpg2)
+AIC(m.mpg3)
+```
+
+## Pick a model
+I like `m.mpg3 (mpg ~ cyl * am + wt)`; it makes some logical sense:
+a light car with a smaller engine and manual transmission
+would seem to have better gas mileage.
+All coefficients are significant, and the AIC is the lowest of
+the four.
+```{r pick.one}
+m.mpg3
+```
+
+## Use the model to predict
+The 2015 Kia Soul with a manual transmission gets 26 mpg.
+The model predicts 25.94; pretty good.
+```{r predict}
+kia.soul <- data.frame(mpg=26, cyl=4, am=1, wt=2.7)
+row.names(kia.soul) <- "Kia Soul 2015"
+predict(m.mpg3, newdata=kia.soul)
+```
+
+
