@@ -14,3 +14,5 @@ output: html_document
 3. Model missing values
 2. Simple regression
 1. Multiple regression modeling
+
+![Simple Regression](temperature.png)
