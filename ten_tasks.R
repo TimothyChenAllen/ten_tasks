@@ -22,9 +22,9 @@ pa_tx[1:20, ]
 
 # 7. Graph it
 # See how it's distributed
-hist(pa_tx_extract$amount, col="blue", density=16)
+hist(pa_tx$amount, col="blue", density=16)
 # Blah!  It's really right skewed!
-hist(log(pa_tx_extract$amount), col="blue", density=16)
+hist(log(pa_tx$amount), col="blue", density=16)
 
 # Plot a scatterplot and a best-fit line
 plot(x=mtcars$wt, y=mtcars$mpg, bg=mtcars$cyl, pch=21)
@@ -44,6 +44,7 @@ head(decs)
 download.file("https://raw.githubusercontent.com/TimothyChenAllen/ten_tasks/master/pa_tx_missing.csv",
               destfile="pa_missing.csv", mode="wb")
 pa_missing <- read.csv("pa_missing.csv")
+View(pa_missing)
 # How many rows have missing data?
 sum(!complete.cases(pa_missing))
 # View rows with missing data
