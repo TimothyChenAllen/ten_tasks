@@ -1,0 +1,81 @@
+---
+title: "Simple Regresion - Pressure vs Speed"
+author: "Timothy Chen Allen"
+date: "Tuesday, August 04, 2015"
+output: html_document
+---
+
+# Simple Data Model
+This is a data model based on a known relationship: windspeed vs
+barometric pressure within a hurricane.  These data combined
+FEMA declaration data with NOAA weather data.
+
+## Purpose of Modeling
+Remember: the purposes of modeling are:
+Based on historical data...
+1) understand relationships between variables
+2) allow prediction 
+
+## Get the data
+These data combine FEMA declaration data with NOAA storm data.
+```{r get.data}
+setInternet2(use=TRUE)
+URL <- "https://raw.githubusercontent.com/TimothyChenAllen/ten_tasks/master/speed_vs_pressure.csv"
+download.file(URL, destfile = "speed_vs_pressure.csv", mode="wb")
+storms <- read.csv("speed_vs_pressure.csv")
+```
+
+## Let's see some of the data
+`speed` in knots, `pressure` in mbars
+```{r inspect.data}
+head(storms,10)
+```
+
+## Create a model predicting Celsius given Fahrenheit
+We know that lower pressure is related to higher windspeed.
+Plot the data, create the model, and compare predicted values to actuals
+Draw a line with the model's prediction values.
+```{r create.model}
+par(mfrow=c(1,1))
+plot(speed ~ pressure, data=storms, pch=cat+20, xlab="Pressure (mbars)", 
+      ylab="Windspeed (knots)", bg=rainbow(7)[cat+2], col="gray50",
+      main="Hurricane Windspeed vs Pressure")
+
+# This creates the model
+m.storms <- lm(speed ~ pressure, data=storms)
+
+# Draw the model's predicted values against the observations
+abline(m.storms, col="purple", lty="dashed", lwd=3)
+```
+
+## Diagnose the model with `summary` and `plot`
+```{r diagnose}
+summary(m.storms)
+par(mfrow=c(2,2))
+plot(m.storms, col="blue")
+```
+
+## Use the model to predict
+Katrina was 902 mbars and 175 mph
+```{r predict}
+test.case <- data.frame(pressure=902) 
+predict(m.storms, newdata=test.case)
+```
+
+# Make a more advanced plot using ggplot2
+```{r ggplot}
+require(ggplot2)
+par(mfrow=c(1,1))
+ggplot(storms, aes(x=pressure, y=speed, fill=rainbow(7)[cat+2])) +
+    geom_point(shape=storms$cat+20) +
+    scale_colour_hue(l=10) +
+    geom_smooth(aes(x=pressure, y=speed, colour="grey", fill="black", alpha=.1), data=storms, method=lm) +
+    theme(legend.position="none") + 
+    ggtitle("Storm Windspeed vs Pressure") + 
+    xlab("Pressure (mbar)") +
+    ylab("Windspeed (knots)") +
+    theme(panel.background = element_blank()) +
+    geom_text(aes(x=890,y=50, hjust=0,label="Speed ~ 1241.5 - 1.194 x Pressure", fontface=3)) +
+    geom_text(aes(x=965,y=175, hjust=0,label="p-value = 2.2e-16", fontface=3)) +
+    geom_text(aes(x=965,y=155, hjust=0,label="R^2 = 0.9271", fontface=3))
+```
